@@ -2,7 +2,9 @@
 
 A clearer, mobile-friendly remake of the Open Source Physics @ Singapore **Newton’s Mountain** and **satellite energy** labs, written for people who are not science specialists.
 
-Live ideas from the originals:
+**Live:** https://orbit-playground.shorlol.workers.dev
+
+Source of the originals:
 
 - [gravity08 — circular orbits, launch speed, angle](https://iwant2study.org/lookangejss/02_newtonianmechanics_7gravity/ejss_model_gravity08/index.html)
 - [gravity08_1 — KE, PE, TE versus distance](https://iwant2study.org/lookangejss/02_newtonianmechanics_7gravity/ejss_model_gravity08_1/index.html)
@@ -25,27 +27,13 @@ npx wrangler dev --port 8787
 
 Then open http://127.0.0.1:8787
 
-Or serve `public/` with any static file server.
-
 ## Deploy on Cloudflare
-
-This is a static Worker (no build step). From the repo root:
 
 ```bash
 npx wrangler deploy
 ```
 
-Or in the Cloudflare dashboard: **Workers & Pages → Create → Connect to Git** with:
-
-| Setting | Value |
-| --- | --- |
-| Deploy command | `npx wrangler deploy` |
-| Root | repository root |
-| Assets directory | `public` |
-
-`wrangler.jsonc` already points `assets.directory` at `./public`.
-
-Custom domain: Workers & Pages → the project → **Custom domains**.
+`wrangler.jsonc` serves `./public` as Workers static assets.
 
 ## Credits
 
