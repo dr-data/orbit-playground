@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070b14" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="description"
+      content="A simple, mobile-friendly lab for orbital speed, launch angle, gravity, and satellite energy."
+    />
+    <title>Orbit Playground</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="stylesheet" href="./css/styles.css" />
+  </head>
+  <body>
+    <a class="skip" href="#stage">Skip to simulation</a>
+    <header class="top">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"></span>
+        <div>
+          <h1>Orbit Playground</h1>
+          <p>See how speed, angle, and gravity make an orbit</p>
+        </div>
+      </div>
+      <button class="icon-btn" id="helpBtn" type="button" aria-haspopup="dialog" aria-controls="helpDialog">How it works</button>
+    </header>
+    <nav class="lessons" aria-label="Story presets">
+      <p class="lessons-label">Try a story</p>
+      <div class="chips" id="chips"></div>
+    </nav>
+    <main class="layout">
+      <section class="stage" id="stage">
+        <canvas id="orbit" aria-label="Earth and satellite path"></canvas>
+        <div class="hud">
+          <p class="status" id="status" data-kind="setup">Ready to launch</p>
+          <p class="coach" id="coach">Drag the pink handle, or pick a story above.</p>
+        </div>
+        <ul class="legend" aria-hidden="true">
+          <li><span class="swatch vel"></span> Speed</li>
+          <li><span class="swatch grav"></span> Gravity</li>
+          <li><span class="swatch trail"></span> Path</li>
+        </ul>
+      </section>
+      <aside class="side">
+        <section class="card" aria-labelledby="energyTitle">
+          <div class="card-head">
+            <h2 id="energyTitle">Energy</h2>
+            <button class="tip" type="button" data-tip="Energy is the budget that decides whether Earth can hold the satellite. Motion energy is from speed. Height energy is from how far away it is (more negative when closer). Total = motion + height." aria-label="What is energy?">?</button>
+          </div>
+          <div class="bars" id="bars">
+            <div class="bar"><div class="bar-meta"><span>Motion energy <span class="muted">KE</span></span><strong id="keVal">—</strong></div><div class="track gold"><i id="keBar"></i></div></div>
+            <div class="bar"><div class="bar-meta"><span>Height energy <span class="muted">PE</span></span><strong id="peVal">—</strong></div><div class="track blue"><i id="peBar"></i></div></div>
+            <div class="bar"><div class="bar-meta"><span>Total energy <span class="muted">TE</span></span><strong id="teVal">—</strong></div><div class="track green"><i id="teBar"></i></div></div>
+          </div>
+          <canvas id="graph" class="graph" aria-label="Energy versus distance from Earth's center"></canvas>
+          <p class="caption" id="energyCaption">Dashed curves: perfect circular orbit. Dots: this satellite.</p>
+        </section>
+        <section class="card" aria-labelledby="launchTitle">
+          <div class="card-head">
+            <h2 id="launchTitle">Launch</h2>
+            <button class="tip" type="button" data-tip="These set the throw. Change them, then press Reset. During flight, use Boost or Snap instead." aria-label="How launch controls work">?</button>
+          </div>
+          <label class="field"><span class="field-row">Speed <button class="tip" type="button" data-tip="How fast you throw it. Sideways speed is what makes an orbit. Circular and escape marks move as height changes." aria-label="What is speed?">?</button><output id="speedOut">7.28 km/s</output></span><input id="speed" type="range" min="0" max="16" step="0.01" value="2" /><span class="ticks" id="speedTicks"><i data-id="circ">circular</i><i data-id="esc">escape</i></span></label>
+          <label class="field"><span class="field-row">Angle <button class="tip" type="button" data-tip="0° is sideways, along Earth’s curve — the usual satellite launch. 90° is straight up. Negative angles throw downward." aria-label="What is angle?">?</button><output id="angleOut">0°</output></span><input id="angle" type="range" min="-90" max="90" step="1" value="0" /></label>
+          <label class="field"><span class="field-row">Height <button class="tip" type="button" data-tip="How high above Earth's surface you start. Higher orbits need less speed, last longer, and have less negative total energy." aria-label="What is height?">?</button><output id="heightOut">1,180 km</output></span><input id="height" type="range" min="0" max="6" step="0.01" value="0.185" /></label>
+          <div class="toggles"><label class="toggle"><input type="checkbox" id="showTrail" checked /> Path</label><label class="toggle"><input type="checkbox" id="showVel" checked /> Speed arrow</label><label class="toggle"><input type="checkbox" id="showGrav" checked /> Gravity arrow</label></div>
+          <details class="math"><summary>Show the math</summary><ul><li>Gravity: <code>F = GMm / r²</code> toward Earth’s center</li><li>Circular speed: <code>v = √(GM / r)</code></li><li>Escape speed: <code>v = √(2GM / r)</code></li><li>Motion energy: <code>KE = ½ m v²</code></li><li>Height energy: <code>PE = −GMm / r</code></li><li>Total: <code>TE = KE + PE</code>. Negative means bound to Earth.</li></ul></details>
+        </section>
+      </aside>
+    </main>
+    <footer class="transport">
+      <div class="readouts" aria-live="polite"><span id="rOut">r = —</span><span id="vOut">v = —</span><span id="tOut">t = —</span></div>
+      <div class="actions">
+        <button id="playBtn" type="button" class="primary">Play</button>
+        <button id="resetBtn" type="button">Reset</button>
+        <button id="snapBtn" type="button" class="tip-host" data-tip="Set speed to the exact circular-orbit value at this height.">Snap circular</button>
+        <button id="slowBtn" type="button" class="tip-host" data-tip="Fire a short reverse burst. Slowing down does not make a smaller circle — it makes an oval that dips closer to Earth.">Boost −</button>
+        <button id="fastBtn" type="button" class="tip-host" data-tip="Fire a short forward burst. Speeding up raises the far side of the path.">Boost +</button>
+      </div>
+    </footer>
+    <dialog id="helpDialog" class="help">
+      <form method="dialog">
+        <h2>A 30-second tour</h2>
+        <ol>
+          <li><strong>Orbit is falling and missing.</strong> Gravity always pulls toward Earth’s center. If you throw sideways fast enough, the ground curves away as fast as you fall.</li>
+          <li><strong>Speed decides the shape.</strong> Too slow → crash. Just right → circle. A bit fast → oval. Very fast → escape.</li>
+          <li><strong>Energy is the budget.</strong> Motion energy is gold. Height energy is blue and negative (closer = more trapped). If total energy is negative, Earth still holds it.</li>
+          <li><strong>Try Boost − on a circular orbit.</strong> It does not drop into a smaller circle. It becomes an oval. That surprise is the whole lesson.</li>
+        </ol>
+        <p class="credits">Inspired by Newton’s Mountain and satellite-energy models by Todd Timberlake, lookang, and Fu-Kwun Hwang (<a href="https://iwant2study.org/lookangejss/02_newtonianmechanics_7gravity/ejss_model_gravity08/index.html">gravity08</a>, <a href="https://iwant2study.org/lookangejss/02_newtonianmechanics_7gravity/ejss_model_gravity08_1/index.html">gravity08_1</a>).</p>
+        <button class="primary" value="ok">Got it</button>
+      </form>
+    </dialog>
+    <div class="toast" id="toast" hidden></div>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>
