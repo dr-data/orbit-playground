@@ -1,0 +1,15 @@
+{
+  "name": "orbit-playground",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Mobile-friendly Newton's Mountain / satellite energy lab for non-science learners.",
+  "scripts": {
+    "test": "node --test tests/physics.test.js",
+    "dev": "npx wrangler dev --port 8787",
+    "deploy": "npx wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.34.0"
+  }
+}
