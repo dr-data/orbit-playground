@@ -7,6 +7,7 @@ export const SAT_MASS = 1;
 export const GM = G * M_EARTH;
 export const MOUNTAIN_ALTITUDE = 0.185 * R_EARTH;
 export const SIDEREAL_DAY = 86164;
+export const LEO_ALTITUDE = 400e3;
 
 export function acceleration(x, y) {
   const r2 = x * x + y * y;
@@ -60,12 +61,54 @@ export function geostationaryRadius() {
   return Math.cbrt(GM / (omega * omega));
 }
 
+export const GEO_RADIUS = geostationaryRadius();
+
+export function leoRadius(earthR = R_EARTH) {
+  return earthR + LEO_ALTITUDE;
+}
+
+export function referenceOrbits() {
+  const leo = leoRadius();
+  const geo = geostationaryRadius();
+  const surface = R_EARTH;
+  return {
+    surface: {
+      r: surface,
+      circular: circularSpeed(surface),
+      escape: escapeSpeed(surface),
+    },
+    leo: {
+      r: leo,
+      altitude: LEO_ALTITUDE,
+      circular: circularSpeed(leo),
+      escape: escapeSpeed(leo),
+    },
+    geo: {
+      r: geo,
+      altitude: geo - R_EARTH,
+      circular: circularSpeed(geo),
+      escape: escapeSpeed(geo),
+    },
+  };
+}
+
+export function speedsAt(r) {
+  return { circular: circularSpeed(r), escape: escapeSpeed(r) };
+}
+
 export function energies(s, m = SAT_MASS) {
   const r = Math.hypot(s.x, s.y);
   const v2 = s.vx * s.vx + s.vy * s.vy;
   const KE = 0.5 * m * v2;
   const PE = r > 0 ? (-GM * m) / r : 0;
   return { r, v: Math.sqrt(v2), KE, PE, TE: KE + PE };
+}
+
+export function energyAt(r, speed, m = SAT_MASS) {
+  const ke = 0.5 * m * speed * speed;
+  const pe = r > 0 ? (-GM * m) / r : 0;
+  const te = ke + pe;
+  return { r, speed, ke, pe, te, KE: ke, PE: pe, TE: te };
 }
 
 export function circularEnergies(r, m = SAT_MASS) {
@@ -220,10 +263,10 @@ export const PRESETS = [
     autoplay: true,
   },
   {
-    id: "circular",
-    label: "Circular orbit",
+    id: "leo",
+    label: "LEO",
     speed: "circular",
-    altitude: MOUNTAIN_ALTITUDE,
+    altitude: LEO_ALTITUDE,
     angle: 0,
     autoplay: true,
   },
@@ -244,16 +287,8 @@ export const PRESETS = [
     autoplay: true,
   },
   {
-    id: "high",
-    label: "High orbit",
-    speed: "circular",
-    altitude: 2 * R_EARTH,
-    angle: 0,
-    autoplay: true,
-  },
-  {
     id: "geo",
-    label: "TV satellite",
+    label: "GEO",
     speed: "circular",
     altitude: "geo",
     angle: 0,
@@ -271,17 +306,74 @@ export function resolvePreset(preset) {
   return { altitude, speed, angleDeg: preset.angle || 0 };
 }
 
-export function energySamples(maxR, n = 80) {
+export function energySamples(rMax, n = 120, rMin = R_EARTH) {
+  const lo = Math.max(R_EARTH, rMin);
+  const hi = Math.max(lo * 1.02, rMax);
   const samples = [];
   for (let i = 0; i < n; i += 1) {
-    const r = R_EARTH + ((maxR - R_EARTH) * i) / (n - 1);
+    const r = lo + ((hi - lo) * i) / (n - 1);
     samples.push({ r, ...circularEnergies(r) });
   }
   return samples;
 }
 
+function energyParts(e) {
+  return {
+    ke: e.KE ?? e.ke ?? 0,
+    pe: e.PE ?? e.pe ?? 0,
+    te: e.TE ?? e.te ?? 0,
+  };
+}
+
+export function energyWindow({ rMin = R_EARTH, rMax, current }) {
+  const samples = energySamples(rMax, 160, rMin);
+  let eMin = samples[0].PE;
+  let eMax = samples[0].KE;
+  for (const s of samples) {
+    eMin = Math.min(eMin, s.PE, s.TE, s.KE);
+    eMax = Math.max(eMax, s.PE, s.TE, s.KE);
+  }
+  if (current) {
+    const { ke, pe, te } = energyParts(current);
+    eMin = Math.min(eMin, pe, te, ke);
+    eMax = Math.max(eMax, pe, te, ke);
+  }
+  const span = Math.max(1e5, eMax - eMin);
+  return {
+    rMin: Math.max(R_EARTH, rMin),
+    rMax: Math.max(rMin * 1.05, rMax),
+    eMin: eMin - 0.08 * span,
+    eMax: eMax + 0.12 * span,
+    samples,
+  };
+}
+
+export function isBound(te) {
+  return te < 0;
+}
+
 export function kmPerSecond(ms) {
   return ms / 1000;
+}
+
+export function formatJ(j) {
+  const mj = j / 1e6;
+  const sign = mj > 0 ? "+" : "";
+  return `${sign}${mj.toFixed(1)} MJ`;
+}
+
+export function formatKm(meters) {
+  const km = meters / 1000;
+  if (Math.abs(km) >= 10000) return `${(km / 1000).toFixed(1)} Mm`;
+  return `${Math.round(km).toLocaleString()} km`;
+}
+
+export function formatSpeed(ms) {
+  return `${(ms / 1000).toFixed(2)} km/s`;
+}
+
+export function polarToXY(r, theta) {
+  return { x: r * Math.cos(theta), y: r * Math.sin(theta) };
 }
 
 export function altitudeKm(r, earthR = R_EARTH) {
