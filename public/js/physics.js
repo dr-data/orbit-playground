@@ -7,6 +7,7 @@ export const SAT_MASS = 1;
 export const GM = G * M_EARTH;
 export const MOUNTAIN_ALTITUDE = 0.185 * R_EARTH;
 export const SIDEREAL_DAY = 86164;
+export const EARTH_OMEGA = (2 * Math.PI) / SIDEREAL_DAY;
 export const LEO_ALTITUDE = 400e3;
 
 export function acceleration(x, y) {
@@ -237,6 +238,57 @@ export function snapCircular(s) {
   return { ...s, vx: v.vx, vy: v.vy };
 }
 
+/** Original gravity08 high non-GEO: period ≈ 2 days (h ≈ 60,720 km). */
+export function highNonGeoRadius() {
+  return Math.cbrt(GM / (0.25 * EARTH_OMEGA * EARTH_OMEGA));
+}
+
+/** Full Newton’s Mountain launch dropdown, matching gravity08 comboBox labels. */
+export const LAUNCH_OPTIONS = [
+  { id: "v2000", label: "v=2000", speed: 2000, altitude: MOUNTAIN_ALTITUDE, angle: 0 },
+  { id: "v4000", label: "v=4000", speed: 4000, altitude: MOUNTAIN_ALTITUDE, angle: 0 },
+  { id: "v6000", label: "v=6000", speed: 6000, altitude: MOUNTAIN_ALTITUDE, angle: 0 },
+  { id: "v8000", label: "v=8000", speed: 8000, altitude: MOUNTAIN_ALTITUDE, angle: 0 },
+  { id: "v10000", label: "v=10000", speed: 10000, altitude: MOUNTAIN_ALTITUDE, angle: 0 },
+  { id: "v12000", label: "v=12000", speed: 12000, altitude: MOUNTAIN_ALTITUDE, angle: 0 },
+  { id: "circ-surface", label: "circular motion at surface", speed: "circular", altitude: 0.001 * R_EARTH, angle: 0 },
+  { id: "circ-2r", label: "circular motion, 2*Earth radius", speed: "circular", altitude: R_EARTH, angle: 0 },
+  { id: "circ-3r", label: "circular motion, 3*Earth radius", speed: "circular", altitude: 2 * R_EARTH, angle: 0 },
+  { id: "circ-4r", label: "circular motion, 4*Earth radius", speed: "circular", altitude: 3 * R_EARTH, angle: 0 },
+  { id: "esc-0", label: "surface escape velocity, θ=0", speed: "escape", altitude: 0.001 * R_EARTH, angle: 0 },
+  { id: "esc-45", label: "surface escape velocity, θ=45", speed: "escape", altitude: 0.001 * R_EARTH, angle: 45 },
+  { id: "esc-90", label: "surface escape velocity, θ=90", speed: "escape", altitude: 0.001 * R_EARTH, angle: 90 },
+  { id: "geo", label: "geostationary, h=35,786 km", speed: "circular", altitude: "geo", angle: 0 },
+  { id: "ngeo", label: "non-geostationary, h=35,786 km", speed: "retro-geo", altitude: "geo", angle: 0 },
+  { id: "ngeo-high", label: "non-geostationary, h=60,720 km", speed: "half-geo", altitude: "high-ngeo", angle: 0 },
+  { id: "user", label: "user defined", speed: "keep", altitude: MOUNTAIN_ALTITUDE, angle: 0 },
+];
+
+/** Full gravity08 worldgraph dropdown. One-shot actions are applied then the menu resets. */
+export const VIEW_OPTIONS = [
+  { id: "world", label: "world" },
+  { id: "graph", label: "graph" },
+  { id: "both", label: "both" },
+  { id: "vel-on", label: "velocity show" },
+  { id: "vel-off", label: "velocity off" },
+  { id: "acc-on", label: "acceleration show" },
+  { id: "acc-off", label: "acceleration off" },
+  { id: "frame-space", label: "reference frame Space" },
+  { id: "frame-earth", label: "reference frame Earth" },
+  { id: "snap", label: "circular orbit launch velocity" },
+  { id: "thrust-back", label: "fire backward thrusters" },
+  { id: "thrust-back2", label: "fire backward thrusters2" },
+  { id: "thrust-fwd", label: "fire forward thrusters" },
+  { id: "thrust-fwd2", label: "fire forward thrusters2" },
+  { id: "ke-t", label: "KE vs t" },
+  { id: "ke-t-off", label: "KE vs t off" },
+  { id: "pe-t", label: "PE vs t" },
+  { id: "pe-t-off", label: "PE vs t off" },
+  { id: "te-t", label: "TE vs t" },
+  { id: "te-t-off", label: "TE vs t off" },
+  { id: "print", label: "print" },
+];
+
 export const PRESETS = [
   {
     id: "falls",
@@ -299,11 +351,23 @@ export const PRESETS = [
 export function resolvePreset(preset) {
   let altitude = preset.altitude;
   if (altitude === "geo") altitude = geostationaryRadius() - R_EARTH;
+  if (altitude === "high-ngeo") altitude = highNonGeoRadius() - R_EARTH;
   const r = R_EARTH + altitude;
   let speed = preset.speed;
+  let angleDeg = preset.angle || 0;
+  if (speed === "keep") {
+    return { altitude, speed: "keep", angleDeg, retro: false };
+  }
+  let retro = false;
   if (speed === "circular") speed = circularSpeed(r);
   if (speed === "escape") speed = escapeSpeed(r);
-  return { altitude, speed, angleDeg: preset.angle || 0 };
+  if (speed === "retro-geo") {
+    speed = circularSpeed(r);
+    angleDeg = 0;
+    retro = true;
+  }
+  if (speed === "half-geo") speed = 0.5 * EARTH_OMEGA * r;
+  return { altitude, speed, angleDeg, retro };
 }
 
 export function energySamples(rMax, n = 120, rMin = R_EARTH) {
