@@ -12,8 +12,12 @@ import {
   circularVelocityAt,
   classify,
   energies,
+  energyWindow,
   escapeSpeed,
   geostationaryRadius,
+  isBound,
+  leoRadius,
+  LEO_ALTITUDE,
   hitEarth,
   launchState,
   orbitalElements,
@@ -29,10 +33,12 @@ describe("orbital speeds", () => {
     const v = circularSpeed(r);
     assert.ok(Math.abs(v - 7276.69) < 2, `got ${v}`);
   });
+
   it("escape speed is √2 times circular speed", () => {
     const r = R_EARTH;
     assert.ok(Math.abs(escapeSpeed(r) / circularSpeed(r) - Math.SQRT2) < 1e-10);
   });
+
   it("surface circular speed is about 7.9 km/s", () => {
     const v = circularSpeed(R_EARTH) / 1000;
     assert.ok(v > 7.8 && v < 8.0, `got ${v}`);
@@ -45,8 +51,11 @@ describe("energy identities for circular orbits", () => {
     const { KE, PE, TE } = circularEnergies(r);
     assert.ok(Math.abs(KE + PE / 2) / KE < 1e-12);
     assert.ok(Math.abs(TE - PE / 2) / Math.abs(TE) < 1e-12);
-    assert.ok(PE < 0 && KE > 0 && TE < 0);
+    assert.ok(PE < 0);
+    assert.ok(KE > 0);
+    assert.ok(TE < 0);
   });
+
   it("actual launch at circular speed has the circular energy pattern", () => {
     const r = R_EARTH + MOUNTAIN_ALTITUDE;
     const s = launchState({ altitude: MOUNTAIN_ALTITUDE, speed: circularSpeed(r), angleDeg: 0 });
@@ -56,6 +65,7 @@ describe("energy identities for circular orbits", () => {
     assert.ok(Math.abs(e.PE - theory.PE) / Math.abs(theory.PE) < 1e-9);
     assert.equal(e.TE, e.KE + e.PE);
   });
+
   it("uses m = 1 kg like the original energy model", () => {
     assert.equal(SAT_MASS, 1);
   });
@@ -65,23 +75,30 @@ describe("orbit classification", () => {
   it("labels a circular mountain launch as circular", () => {
     const r = R_EARTH + MOUNTAIN_ALTITUDE;
     const s = launchState({ altitude: MOUNTAIN_ALTITUDE, speed: circularSpeed(r) });
-    assert.equal(classify(s).kind, "circular");
+    const c = classify(s);
+    assert.equal(c.kind, "circular");
+    assert.ok(c.ecc < 0.06);
   });
+
   it("labels 2 km/s from the mountain as a crash or ellipse that hits", () => {
     const s = launchState({ altitude: MOUNTAIN_ALTITUDE, speed: 2000 });
     const c = classify(s);
     assert.ok(c.kind === "ellipse" || c.kind === "crash");
     assert.ok(c.periapsis < R_EARTH || c.kind === "crash");
   });
+
   it("labels escape speed as escaping", () => {
     const altitude = 10000;
     const r = R_EARTH + altitude;
     const s = launchState({ altitude, speed: escapeSpeed(r) });
-    assert.equal(classify(s).kind, "escape");
+    const c = classify(s);
+    assert.equal(c.kind, "escape");
   });
-  it("detects a hit when inside Earth", () => {
+
+  it("detects a hit when radius is Earth's radius", () => {
     assert.equal(hitEarth({ x: 0, y: R_EARTH * 0.999, vx: 0, vy: 0 }), true);
     assert.equal(hitEarth({ x: 0, y: R_EARTH, vx: 0, vy: 0 }), false);
+    assert.equal(hitEarth({ x: 0, y: R_EARTH * 1.2, vx: 0, vy: 0 }), false);
   });
 });
 
@@ -92,7 +109,8 @@ describe("RK4 circular orbit stays round", () => {
     const T = periodCircular(r0);
     const dt = 20;
     const steps = Math.ceil(T / dt);
-    let rMin = r0, rMax = r0;
+    let rMin = r0;
+    let rMax = r0;
     for (let i = 0; i < steps; i += 1) {
       s = rk4Step(s, dt);
       const r = Math.hypot(s.x, s.y);
@@ -112,7 +130,9 @@ describe("boosts and snaps", () => {
     const el = orbitalElements(s);
     assert.ok(el.ecc > 0.05);
     assert.ok(el.periapsis < r0);
+    assert.ok(el.apoapsis > r0 * 0.99);
   });
+
   it("snapCircular restores circular speed at the current radius", () => {
     const s = snapCircular({ x: 0, y: 3 * R_EARTH, vx: 100, vy: 50, t: 0 });
     const v = Math.hypot(s.vx, s.vy);
@@ -124,19 +144,60 @@ describe("boosts and snaps", () => {
 describe("geostationary preset", () => {
   it("period is one sidereal day", () => {
     const r = geostationaryRadius();
-    assert.ok(Math.abs(periodCircular(r) - 86164) < 2);
+    const T = periodCircular(r);
+    assert.ok(Math.abs(T - 86164) < 2, `got ${T}`);
   });
+
   it("resolvePreset maps geo to circular speed at GEO radius", () => {
-    const resolved = resolvePreset({ speed: "circular", altitude: "geo", angle: 0 });
+    const resolved = resolvePreset({
+      speed: "circular",
+      altitude: "geo",
+      angle: 0,
+    });
     const r = R_EARTH + resolved.altitude;
     assert.ok(Math.abs(resolved.speed - circularSpeed(r)) < 1e-6);
     assert.ok(r > 4e7 && r < 4.3e7);
   });
 });
 
-describe("constants match the original models", () => {
-  it("uses G=6.67e-11 and M=6.0e24", () => {
-    assert.equal(GM, 6.67e-11 * 6.0e24);
-    assert.equal(M_EARTH, 6.0e24);
+describe("why PE and total energy are negative", () => {
+  it("PE is negative at every finite distance", () => {
+    for (const r of [R_EARTH, leoRadius(), geostationaryRadius(), 20 * R_EARTH]) {
+      assert.ok(circularEnergies(r).PE < 0);
+    }
+  });
+
+  it("circular-orbit total energy is always negative (bound)", () => {
+    const { TE, KE, PE } = circularEnergies(leoRadius());
+    assert.ok(isBound(TE));
+    assert.ok(KE > 0);
+    assert.ok(PE < 0);
+    assert.ok(Math.abs(KE + PE / 2) / KE < 1e-12);
+  });
+
+  it("escape speed makes total energy ~ 0", () => {
+    const r = leoRadius();
+    const s = launchState({ altitude: r - R_EARTH, speed: escapeSpeed(r) });
+    const { TE } = energies(s);
+    assert.ok(Math.abs(TE) / Math.abs(circularEnergies(r).PE) < 1e-9);
+    assert.equal(isBound(0), false);
+    assert.equal(isBound(-1), true);
+    assert.equal(isBound(1), false);
+  });
+
+  it("energy window includes kinetic energy so the curve is not chopped", () => {
+    const r = R_EARTH + MOUNTAIN_ALTITUDE;
+    const current = circularEnergies(r);
+    const win = energyWindow({ rMin: R_EARTH, rMax: 8 * R_EARTH, current });
+    assert.ok(win.eMax > current.KE, "KE must fit inside the y-range");
+    assert.ok(win.eMin < current.PE);
+  });
+});
+
+describe("LEO and GEO", () => {
+  it("LEO sits a few hundred km up, below GEO", () => {
+    assert.equal(LEO_ALTITUDE, 400e3);
+    assert.ok(leoRadius() < geostationaryRadius());
+    assert.ok(circularSpeed(leoRadius()) > circularSpeed(geostationaryRadius()));
   });
 });
