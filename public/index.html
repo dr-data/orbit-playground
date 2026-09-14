@@ -14,7 +14,7 @@
     <link rel="manifest" href="./manifest.json" />
     <link rel="stylesheet" href="./css/styles.css" />
   </head>
-  <body>
+  <body class="tab-orbit">
     <a class="skip" href="#stage">Skip to simulation</a>
     <header class="top">
       <div class="brand">
@@ -24,54 +24,124 @@
           <p>See how speed, angle, and gravity make an orbit</p>
         </div>
       </div>
-      <button class="icon-btn" id="helpBtn" type="button" aria-haspopup="dialog" aria-controls="helpDialog">How it works</button>
-    </header>
-    <nav class="lessons" aria-label="Story presets">
-      <p class="lessons-label">Try a story</p>
-      <div class="chips" id="chips"></div>
-    </nav>
-    <main class="layout">
-      <section class="stage" id="stage">
-        <canvas id="orbit" aria-label="Earth and satellite path"></canvas>
-        <div class="hud">
-          <p class="status" id="status" data-kind="setup">Ready to launch</p>
-          <p class="coach" id="coach">Drag the pink handle, or pick a story above.</p>
+      <div class="top-actions">
+        <div class="tabs" role="tablist" aria-label="Labs">
+          <button type="button" role="tab" id="tab-orbit" aria-selected="true" aria-controls="orbit-lab">Orbit</button>
+          <button type="button" role="tab" id="tab-energy" aria-selected="false" aria-controls="energy-lab">Energy Lab</button>
         </div>
-        <ul class="legend" aria-hidden="true">
-          <li><span class="swatch vel"></span> Speed</li>
-          <li><span class="swatch grav"></span> Gravity</li>
-          <li><span class="swatch trail"></span> Path</li>
-        </ul>
-      </section>
-      <aside class="side">
-        <section class="card" aria-labelledby="energyTitle">
-          <div class="card-head">
-            <h2 id="energyTitle">Energy</h2>
-            <button class="tip" type="button" data-tip="Energy is the budget that decides whether Earth can hold the satellite. Motion energy is from speed. Height energy is from how far away it is (more negative when closer). Total = motion + height." aria-label="What is energy?">?</button>
+        <button class="icon-btn" id="helpBtn" type="button" aria-haspopup="dialog" aria-controls="helpDialog">How it works</button>
+      </div>
+    </header>
+    <div id="orbit-lab" class="orbit-only" role="tabpanel" aria-labelledby="tab-orbit">
+      <nav class="lessons" aria-label="Story presets">
+        <p class="lessons-label">Try a story</p>
+        <div class="chips" id="chips"></div>
+      </nav>
+      <main class="layout">
+        <section class="stage" id="stage">
+          <canvas id="orbit" aria-label="Earth and satellite path"></canvas>
+          <div class="hud">
+            <p class="status" id="status" data-kind="setup">Ready to launch</p>
+            <p class="coach" id="coach">Drag the pink handle, or pick a story above.</p>
           </div>
-          <div class="bars" id="bars">
-            <div class="bar"><div class="bar-meta"><span>Motion energy <span class="muted">KE</span></span><strong id="keVal">—</strong></div><div class="track gold"><i id="keBar"></i></div></div>
-            <div class="bar"><div class="bar-meta"><span>Height energy <span class="muted">PE</span></span><strong id="peVal">—</strong></div><div class="track blue"><i id="peBar"></i></div></div>
-            <div class="bar"><div class="bar-meta"><span>Total energy <span class="muted">TE</span></span><strong id="teVal">—</strong></div><div class="track green"><i id="teBar"></i></div></div>
+          <div class="zoom-ctl" role="group" aria-label="Orbit view zoom">
+            <button type="button" id="orbit-zoom-out" title="Zoom out">−</button>
+            <button type="button" id="orbit-zoom-in" title="Zoom in">+</button>
+            <button type="button" id="orbit-zoom-max" title="Show Earth, LEO, GEO, and the satellite">Max</button>
+            <button type="button" id="orbit-follow" aria-pressed="true" title="Keep the satellite in view">Follow</button>
           </div>
-          <canvas id="graph" class="graph" aria-label="Energy versus distance from Earth's center"></canvas>
-          <p class="caption" id="energyCaption">Dashed curves: perfect circular orbit. Dots: this satellite.</p>
+          <ul class="legend" aria-hidden="true">
+            <li><span class="swatch vel"></span> Speed</li>
+            <li><span class="swatch grav"></span> Gravity</li>
+            <li><span class="swatch trail"></span> Path</li>
+            <li><span class="swatch leo"></span> LEO</li>
+            <li><span class="swatch geo"></span> GEO</li>
+          </ul>
         </section>
-        <section class="card" aria-labelledby="launchTitle">
+        <aside class="side">
+          <section class="card" aria-labelledby="energyTitle">
+            <div class="card-head">
+              <h2 id="energyTitle">Energy</h2>
+              <button class="tip" type="button" data-tip="Energy is the budget that decides whether Earth can hold the satellite. Motion energy is from speed. Height energy is from how far away it is (more negative when closer). Total = motion + height. Open Energy Lab to experiment." aria-label="What is energy?">?</button>
+              <div class="zoom-ctl compact" role="group" aria-label="Energy graph zoom">
+                <button type="button" id="graph-zoom-out" title="Zoom out">−</button>
+                <button type="button" id="graph-zoom-in" title="Zoom in around this height">+</button>
+                <button type="button" id="graph-zoom-max" title="Show Earth out past GEO">Max</button>
+              </div>
+            </div>
+            <div class="bars" id="bars">
+              <div class="bar"><div class="bar-meta"><span>Motion energy <span class="muted">KE</span></span><strong id="keVal">—</strong></div><div class="track gold"><i id="keBar"></i></div></div>
+              <div class="bar"><div class="bar-meta"><span>Height energy <span class="muted">PE</span></span><strong id="peVal">—</strong></div><div class="track blue"><i id="peBar"></i></div></div>
+              <div class="bar"><div class="bar-meta"><span>Total energy <span class="muted">TE</span></span><strong id="teVal">—</strong></div><div class="track green"><i id="teBar"></i></div></div>
+            </div>
+            <canvas id="graph" class="graph" aria-label="Energy versus distance from Earth's center"></canvas>
+            <p class="caption" id="energyCaption">Dashed curves: perfect circular orbit. Dots: this satellite. Use zoom if a curve is chopped.</p>
+          </section>
+          <section class="card" aria-labelledby="launchTitle">
+            <div class="card-head">
+              <h2 id="launchTitle">Launch</h2>
+              <button class="tip" type="button" data-tip="These set the throw. Change them, then press Reset. During flight, use Boost or Snap instead." aria-label="How launch controls work">?</button>
+            </div>
+            <label class="field"><span class="field-row">Speed <button class="tip" type="button" data-tip="How fast you throw it. Sideways speed is what makes an orbit. The circular and escape marks move as height changes. Escape speed is √2 times circular speed." aria-label="What is speed?">?</button><output id="speedOut">7.28 km/s</output></span><input id="speed" type="range" min="0" max="16" step="0.01" value="2" /><span class="ticks" id="speedTicks"><i data-id="circ">circular</i><i data-id="esc">escape</i></span></label>
+            <label class="field"><span class="field-row">Angle <button class="tip" type="button" data-tip="0° is sideways, along Earth’s curve — the usual satellite launch. 90° is straight up. Negative angles throw downward." aria-label="What is angle?">?</button><output id="angleOut">0°</output></span><input id="angle" type="range" min="-90" max="90" step="1" value="0" /></label>
+            <label class="field"><span class="field-row">Height <button class="tip" type="button" data-tip="How high above Earth's surface you start. LEO is about 400 km (space station). GEO is about 35,786 km (TV and weather satellites). Higher orbits need less speed." aria-label="What is height?">?</button><output id="heightOut">1,180 km</output></span><input id="height" type="range" min="0" max="6.5" step="0.01" value="0.185" /><span class="ticks" id="heightTicks"><i data-id="leo">LEO</i><i data-id="geo">GEO</i></span></label>
+            <div class="toggles"><label class="toggle"><input type="checkbox" id="showTrail" checked /> Path</label><label class="toggle"><input type="checkbox" id="showVel" checked /> Speed arrow</label><label class="toggle"><input type="checkbox" id="showGrav" checked /> Gravity arrow</label></div>
+            <details class="math"><summary>Show the math</summary><ul><li>Gravity: <code>F = GMm / r²</code> toward Earth’s center</li><li>Circular speed: <code>v = √(GM / r)</code></li><li>Escape speed: <code>v = √(2GM / r)</code></li><li>Motion energy: <code>KE = ½ m v²</code></li><li>Height energy: <code>PE = −GMm / r</code></li><li>Total: <code>TE = KE + PE</code>. Negative means bound to Earth.</li></ul></details>
+          </section>
+        </aside>
+      </main>
+    </div>
+    <section id="energy-lab" class="energy-lab" role="tabpanel" aria-labelledby="tab-energy" hidden>
+      <header class="lab-intro">
+        <h2>Energy at different heights</h2>
+        <p>Slide the satellite in or out. Watch kinetic energy (motion), potential energy (height), and total energy. Potential is measured from <strong>zero at infinite distance</strong>, so near Earth it is negative — a gravity well.</p>
+      </header>
+      <div class="lab-grid">
+        <section class="card lab-graph-card">
           <div class="card-head">
-            <h2 id="launchTitle">Launch</h2>
-            <button class="tip" type="button" data-tip="These set the throw. Change them, then press Reset. During flight, use Boost or Snap instead." aria-label="How launch controls work">?</button>
+            <h3>Energy vs distance</h3>
+            <div class="zoom-ctl compact" role="group" aria-label="Energy Lab graph zoom">
+              <button type="button" id="lab-zoom-out" title="Zoom out">−</button>
+              <button type="button" id="lab-zoom-in" title="Zoom in">+</button>
+              <button type="button" id="lab-zoom-max" title="Earth surface out past GEO">Max</button>
+            </div>
           </div>
-          <label class="field"><span class="field-row">Speed <button class="tip" type="button" data-tip="How fast you throw it. Sideways speed is what makes an orbit. Circular and escape marks move as height changes." aria-label="What is speed?">?</button><output id="speedOut">7.28 km/s</output></span><input id="speed" type="range" min="0" max="16" step="0.01" value="2" /><span class="ticks" id="speedTicks"><i data-id="circ">circular</i><i data-id="esc">escape</i></span></label>
-          <label class="field"><span class="field-row">Angle <button class="tip" type="button" data-tip="0° is sideways, along Earth’s curve — the usual satellite launch. 90° is straight up. Negative angles throw downward." aria-label="What is angle?">?</button><output id="angleOut">0°</output></span><input id="angle" type="range" min="-90" max="90" step="1" value="0" /></label>
-          <label class="field"><span class="field-row">Height <button class="tip" type="button" data-tip="How high above Earth's surface you start. Higher orbits need less speed, last longer, and have less negative total energy." aria-label="What is height?">?</button><output id="heightOut">1,180 km</output></span><input id="height" type="range" min="0" max="6" step="0.01" value="0.185" /></label>
-          <div class="toggles"><label class="toggle"><input type="checkbox" id="showTrail" checked /> Path</label><label class="toggle"><input type="checkbox" id="showVel" checked /> Speed arrow</label><label class="toggle"><input type="checkbox" id="showGrav" checked /> Gravity arrow</label></div>
-          <details class="math"><summary>Show the math</summary><ul><li>Gravity: <code>F = GMm / r²</code> toward Earth’s center</li><li>Circular speed: <code>v = √(GM / r)</code></li><li>Escape speed: <code>v = √(2GM / r)</code></li><li>Motion energy: <code>KE = ½ m v²</code></li><li>Height energy: <code>PE = −GMm / r</code></li><li>Total: <code>TE = KE + PE</code>. Negative means bound to Earth.</li></ul></details>
+          <canvas id="energy-lab-graph" class="graph tall" aria-label="Energy versus radius for the energy lab"></canvas>
+          <p class="caption">Gold = kinetic. Purple = potential. Teal = total. Dots mark your current height and speed.</p>
         </section>
-      </aside>
-    </main>
-    <footer class="transport">
-      <div class="readouts" aria-live="polite"><span id="rOut">r = —</span><span id="vOut">v = —</span><span id="tOut">t = —</span></div>
+        <section class="card lab-controls">
+          <h3>Experiment</h3>
+          <div class="jumps" role="group" aria-label="Jump to a height">
+            <button type="button" data-lab-jump="surface">Surface</button>
+            <button type="button" data-lab-jump="leo">LEO</button>
+            <button type="button" data-lab-jump="geo">GEO</button>
+            <button type="button" data-lab-jump="far">Farther</button>
+          </div>
+          <label class="field"><span class="field-row">Distance from Earth’s centre <output id="lab-r-val">—</output></span><input id="lab-r" type="range" min="1" max="12000" step="1" value="185" /></label>
+          <label class="toggle lock"><input type="checkbox" id="lab-lock-circular" checked /> Lock speed to circular orbit</label>
+          <label class="field"><span class="field-row">Speed <output id="lab-v-val">—</output></span><input id="lab-v" type="range" min="0" max="1000" step="1" value="500" /></label>
+          <div class="lab-readout" id="lab-readout"></div>
+        </section>
+        <section class="card lab-why">
+          <h3>Why PE and total energy are negative</h3>
+          <ol>
+            <li><strong>We set PE = 0 at infinity.</strong> That is the top of the hill. Closer to Earth is downhill, so PE = −GMm/r is less than zero.</li>
+            <li><strong>Kinetic energy is never negative.</strong> Speed always adds a positive ½mv².</li>
+            <li><strong>On a circular orbit, KE = −PE/2.</strong> So total energy is PE/2 — still negative. The satellite does not have enough energy to climb all the way out of the well.</li>
+            <li><strong>Total energy is the verdict.</strong> TE &lt; 0 bound (ellipse or circle). TE = 0 just escapes. TE &gt; 0 flies away with leftover speed.</li>
+          </ol>
+          <p class="lab-story" id="lab-story"></p>
+        </section>
+      </div>
+    </section>
+    <footer class="transport orbit-only">
+      <div class="readouts" aria-live="polite">
+        <span id="rOut">r = —</span>
+        <span id="vOut">v = —</span>
+        <span id="circOut">circular = —</span>
+        <span id="escOut">escape = —</span>
+        <span id="tOut">t = —</span>
+      </div>
       <div class="actions">
         <button id="playBtn" type="button" class="primary">Play</button>
         <button id="resetBtn" type="button">Reset</button>
@@ -85,9 +155,10 @@
         <h2>A 30-second tour</h2>
         <ol>
           <li><strong>Orbit is falling and missing.</strong> Gravity always pulls toward Earth’s center. If you throw sideways fast enough, the ground curves away as fast as you fall.</li>
-          <li><strong>Speed decides the shape.</strong> Too slow → crash. Just right → circle. A bit fast → oval. Very fast → escape.</li>
-          <li><strong>Energy is the budget.</strong> Motion energy is gold. Height energy is blue and negative (closer = more trapped). If total energy is negative, Earth still holds it.</li>
-          <li><strong>Try Boost − on a circular orbit.</strong> It does not drop into a smaller circle. It becomes an oval. That surprise is the whole lesson.</li>
+          <li><strong>Speed decides the shape.</strong> Too slow → crash. Circular speed → circle. A bit fast → oval. Escape speed → leave Earth. LEO is a low circle (~400 km). GEO is a high circle (~35,786 km) that matches Earth’s day.</li>
+          <li><strong>Energy is the budget.</strong> Motion energy is gold. Height energy is purple and negative (closer = more trapped). If total energy is negative, Earth still holds it.</li>
+          <li><strong>Zoom.</strong> Use − / + / Max on the Earth view and on the energy graph if a curve is chopped off. Max shows Earth, the satellite, LEO, and GEO together.</li>
+          <li><strong>Energy Lab</strong> lets you slide height and speed and see why PE and total energy must be negative for a bound orbit.</li>
         </ol>
         <p class="credits">Inspired by Newton’s Mountain and satellite-energy models by Todd Timberlake, lookang, and Fu-Kwun Hwang (<a href="https://iwant2study.org/lookangejss/02_newtonianmechanics_7gravity/ejss_model_gravity08/index.html">gravity08</a>, <a href="https://iwant2study.org/lookangejss/02_newtonianmechanics_7gravity/ejss_model_gravity08_1/index.html">gravity08_1</a>).</p>
         <button class="primary" value="ok">Got it</button>
