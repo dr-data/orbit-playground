@@ -14,6 +14,8 @@ Live ideas from the originals:
 - **Gravity** — the red arrow always points to Earth’s center; that inward pull *is* the centripetal force
 - **Energy** — gold motion energy, purple height energy (negative), teal total. If total is negative, Earth still holds the satellite
 - **LEO / GEO / escape** — reference rings and speed marks, plus story chips for a space-station orbit, a geostationary orbit, and leaving Earth
+- **Launch and View menus** — the original Newton’s Mountain dropdowns: numbered throws, circular orbits at 1–4 Earth radii, escape at 0°/45°/90°, GEO, retrograde GEO, the 2-day orbit, world/graph/both, velocity and acceleration arrows, Space/Earth reference frames, thrusters, and KE/PE/TE vs time
+- **Reference frame** — Space: Earth spins once per sidereal day, so GEO hovers over the gold mountain. Earth: the globe is frozen; GEO still circles once a day
 - **Zoom** — − / + / Max on the Earth view and the energy graph so curves are not chopped and you can see Earth together with the satellite
 - **Energy Lab** — a second tab to slide height and speed, and to see why PE and total energy must be negative
 
